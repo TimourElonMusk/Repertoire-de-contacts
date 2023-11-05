@@ -174,7 +174,6 @@ Annuler : STOP""")
                                 else:
                                     resultats[choix1-1].email = input("Adresse mail : ")
                             elif choix3 == '4':
-
                                 dicoGroupes = {}
                                 for contact in contacts:
                                     if contact.groupe in dicoGroupes.keys():
