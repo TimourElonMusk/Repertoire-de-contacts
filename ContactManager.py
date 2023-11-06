@@ -32,12 +32,30 @@ class ContactManager:
         file = self.__getFile()
         reader = csv.DictReader(file)
         for row in reader:
-            contacts.append(Contact(
-                nom=row['nom'],
-                numero=row['numero'],
-                email=row['email'],
-                groupe=row['groupe']
-            ))
+            if row['groupe'] == '[]':
+                contacts.append(Contact(
+                    nom=row['nom'],
+                    numero=row['numero'],
+                    email=row['email']
+                ))
+            else:
+                listeGroupes = []
+                groupeEnCours = ""
+                for lettre in row['groupe']:
+                    if lettre not in ['[',']']:
+                        if lettre != ',':
+                            groupeEnCours += lettre
+                        else:
+                            listeGroupes.append(groupeEnCours)
+                            groupeEnCours = ""
+                contacts.append(Contact(
+                    nom=row['nom'],
+                    numero=row['numero'],
+                    email=row['email'],
+                    groupe=listeGroupes
+                ))
+                        
+                        
         return(contacts)
     
     def __sauvegarder_contacts(self):
@@ -68,44 +86,40 @@ class ContactManager:
         dicoGroupes = {}
         contacts = self.__importer_contacts()
         for contact in contacts:
-            if contact.groupe in dicoGroupes.keys():
-                dicoGroupes[contact.groupe].append(contact.nom)
-            else:
-                dicoGroupes[contact.groupe] = [contact.nom]
-        if dicoGroupes:
-            choix1 = '0'
-            if choix1.isnumeric():
-                while not 1 <= int(choix1) <= len(dicoGroupes):
-                    print("""
+            if contact.groupe:
+                for groupe in contact.groupe:
+                    if groupe in dicoGroupes.keys():
+                        dicoGroupes[groupe].append(contact.nom)
+                    else:
+                        dicoGroupes[groupe] = [contact.nom]
+        if not dicoGroupes:
+            print("Aucun groupe. Recherchez un contact pour l'ajouter dans un nouveau groupe.")
+        else:
+            choix1 = 'a'
+            while not choix1.isnumeric():
+                print("""
 =====CHOISIR UN GROUPE=====
 """)
-                    listeNomsGroupes = []
-                    i = 1
-                    for groupe in dicoGroupes.keys():
-                        print(f"{groupe} : {i}")
-                        listeNomsGroupes.append(groupe)
-                        i += 1
-                    choix2 = input("""ECRIRE "STOP" POUR ANNULER
+                listeNomsGroupes = []
+                i = 1
+                for groupe in dicoGroupes.keys():
+                    print(f"{groupe} : {i}")
+                    listeNomsGroupes.append(groupe)
+                    i += 1
+                choix1 = input("""ECRIRE "STOP" POUR ANNULER
 """)
-                    if choix2.isnumeric():
-                        if 1 <= int(choix2) <= len(dicoGroupes):
-                            print(f"==={listeNomsGroupes[i-1]}===")
-                            for contact in dicoGroupes[listeNomsGroupes[i-1]]:
-                                print(f"{contact.nom} ({contact.numero})")
-                        else:
-                            print("Merci d'écrire un chiffre valide.")
-                    elif choix2 == 'STOP':
-                        pass
+                if choix1.isnumeric():
+                    if 1 <= int(choix1) <= len(dicoGroupes):
+                        print(f"==={listeNomsGroupes[i-1]}===")
+                        for contact in dicoGroupes[listeNomsGroupes[i-1]]:
+                            print(f"{contact.nom} ({contact.numero})")
                     else:
                         print("Merci d'écrire un chiffre valide.")
-            elif choix1 == 'STOP':
-                pass
-            else:
-                print("Merci d'écrire un chiffre valide.")
-        else:
-            print("""
-Aucun groupe. Recherchez un contact pour l'ajouter dans un nouveau groupe.
-""")
+                elif choix1.upper() == 'STOP':
+                    break
+                else:
+                    print("Merci d'écrire un chiffre valide.")
+                    choix1 = 'a'
         time.sleep(0.5)
 
     def rechercher_contact(self):
@@ -117,13 +131,17 @@ Aucun groupe. Recherchez un contact pour l'ajouter dans un nouveau groupe.
             if contact.nom.lower().find(recherche.lower()) != -1:
                 resultats.append(contact)
         if resultats:
-            print(f"{len(resultats)} RESULTATS :")
+            if len(resultats) == 1:
+                print(f"{len(resultats)} RESULTAT :")
+            else:
+                print(f"{len(resultats)} RESULTATS :")
             for i in range(len(resultats)):
                 print(f"{resultats[i].nom} ({resultats[i].numero}) : {i + 1}")
             choix1 = input("""
 Pour choisir une action à réaliser sur un contact, écrire le chiffre correspondant au contact. Pour annuler, écrire STOP.
-""")
+""").upper()
             if choix1.isnumeric():
+                choix1 = int(choix1)
                 if 1 <= int(choix1) <= len(resultats):
                     choix2 = input(f"""{resultats[choix1-1].nom} ({resultats[choix1-1].numero})
 
@@ -138,7 +156,7 @@ Annuler : STOP
                             print("BIIIP")
                             time.sleep(2)
                         print(f"Bonjour, vous êtes bien sur le répondeur de {resultats[choix1-1].nom}. Je ne suis pas disponible pour le moment. Merci de me laisser un message après le BIP.")
-                        time.sleep(2)
+                        time.sleep(3)
                         print("BIIIIIIP")
                         input()
                     elif choix2 == '2':
@@ -152,7 +170,8 @@ Nom : 1
 Numero : 2
 Adresse email : 3
 Groupe(s) : 4
-Annuler : STOP""")
+Annuler : STOP
+""")
                             if choix3 == '1':
                                 resultats[choix1-1].nom = input("Nouveau nom : ")
                             elif choix3 == '2':
@@ -162,7 +181,8 @@ Annuler : STOP""")
                                     choix4 = input("""Souhaitez-vous modifier l'adresse mail ou la supprimer ?
 Modifier : 1
 Supprimer : 2
-Annuler : STOP""")
+Annuler : STOP
+""")
                                     if choix4 == '1':
                                         resultats[choix1-1].email = input("Adresse mail : ")
                                     elif choix4 == '2':
@@ -176,10 +196,11 @@ Annuler : STOP""")
                             elif choix3 == '4':
                                 dicoGroupes = {}
                                 for contact in contacts:
-                                    if contact.groupe in dicoGroupes.keys():
-                                        dicoGroupes[contact.groupe].append(contact.nom)
-                                    else:
-                                        dicoGroupes[contact.groupe] = [contact.nom]
+                                    for groupe in contact.groupe:
+                                        if contact.groupe in dicoGroupes.keys():
+                                            dicoGroupes[contact.groupe].append(contact.nom)
+                                        else:
+                                            dicoGroupes[contact.groupe] = [contact.nom]
                                 if dicoGroupes:
                                     if resultats[choix1-1].groupe:
                                         choix4 = input("""Voulez-vous ajouter le contact dans un groupe ou le supprimer d'un groupe ?
@@ -246,12 +267,15 @@ Annuler : STOP""")
                         pass
                     else:
                         print("Merci d'écrire un chiffre valide.")
+                        time.sleep(0.5)
                 else:
                     print("Merci d'écrire un chiffre valide.")
+                    time.sleep(0.5)
             elif choix1.upper() == 'STOP':
                 pass
-            else: print("Merci d'écrire un chiffre valide.")
-
+            else:
+                print("Merci d'écrire un chiffre valide.")
+                time.sleep(0.5)
         else:
             print(f'Aucun contact trouvé pour la recherche "{recherche}".')
             time.sleep(0.5)
