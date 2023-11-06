@@ -33,10 +33,9 @@ Quitter : STOP
         nom = input("Nom : ")
         while not nom:
             nom = input("Merci d'écrire un nom (OBLIGATOIRE) : ")
-        patternNumero = r"^\d{10}$"
         numero = input("Numéro : ")
-        while not re.match(patternNumero, numero) or numero[0] != '0':
-            numero = input("Merci d'écrire un numéro valide (10 chiffres commençant par 0) : ")
+        while not numero.isnumeric():
+            numero = input("Merci d'écrire un numéro valide : ")
         choix2 = input("Voulez-vous ajouter une adresse mail ? (O / N)").upper()
         while choix2 not in ['O','N']:
             choix2 = input("Merci d'écrire une lettre valide. (O / N)")
