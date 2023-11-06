@@ -61,6 +61,8 @@ class ContactManager:
     def __sauvegarder_contacts(self):
         '''Si un contact est modifié, le fichier contacts.csv est mis à jour en étant réécrit en entier.'''
         contacts = self.__importer_contacts()
+        for contact in contacts:
+            contact.groupe = '[' + ','.join(contact.groupe) + ']'
         data = [self.fieldnames, ([contact.nom, contact.numero, contact.email, contact.groupe] for contact in contacts)]
         with open(self.FILE_NAME, 'w', newline='') as file:
             writer = csv.DictWriter(file, fieldnames=self.fieldnames)
