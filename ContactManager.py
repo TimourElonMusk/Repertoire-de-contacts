@@ -63,12 +63,12 @@ class ContactManager:
         contacts = self.__importer_contacts()
         for contact in contacts:
             contact.groupe = '[' + ','.join(contact.groupe) + ']'
-        data = [self.fieldnames, ([contact.nom, contact.numero, contact.email, contact.groupe] for contact in contacts)]
+        data = [self.fieldnames]
+        for contact in contacts:
+            data.append([contact.nom, contact.numero, contact.email, contact.groupe])
         with open(self.FILE_NAME, 'w', newline='') as file:
-            writer = csv.DictWriter(file, fieldnames=self.fieldnames)
-            writer.writeheader()
-            for row in data:
-                writer.writerow(row)
+            writer = csv.writer(file)
+            writer.writerows(data)
     
     def liste_contacts(self):
         '''Imprimer la liste de tous les contacts.'''
@@ -105,16 +105,16 @@ class ContactManager:
                 listeNomsGroupes = []
                 i = 1
                 for groupe in dicoGroupes.keys():
-                    print(f"{groupe} : {i}")
+                    print(f"{i} : {groupe}")
                     listeNomsGroupes.append(groupe)
                     i += 1
-                choix1 = input("""ECRIRE "STOP" POUR ANNULER
+                choix1 = input("""ECRIRE "STOP" POUR ANNULER.
 """)
                 if choix1.isnumeric():
                     if 1 <= int(choix1) <= len(dicoGroupes):
                         print(f"==={listeNomsGroupes[i-1]}===")
                         for contact in dicoGroupes[listeNomsGroupes[i-1]]:
-                            print(f"{contact.nom} ({contact.numero})")
+                            print(contact)
                     else:
                         print("Merci d'écrire un chiffre valide.")
                 elif choix1.upper() == 'STOP':
@@ -134,24 +134,24 @@ class ContactManager:
                 resultats.append(contact)
         if resultats:
             if len(resultats) == 1:
-                print(f"{len(resultats)} RESULTAT :")
+                print("1 RESULTAT :")
             else:
                 print(f"{len(resultats)} RESULTATS :")
             for i in range(len(resultats)):
-                print(f"{resultats[i].nom} ({resultats[i].numero}) : {i + 1}")
+                print(f"{i + 1} : {resultats[i].nom} ({resultats[i].numero})")
             choix1 = input("""
 Pour choisir une action à réaliser sur un contact, écrire le chiffre correspondant au contact. Pour annuler, écrire STOP.
-""").upper()
+""")
             if choix1.isnumeric():
                 choix1 = int(choix1)
                 if 1 <= int(choix1) <= len(resultats):
-                    choix2 = input(f"""{resultats[choix1-1].nom} ({resultats[choix1-1].numero})
+                    choix2 = input(f"""{resultats[choix1-1]}
 
-Appeler : 1
-Envoyer un message : 2
-Modifier : 3
-Supprimer : 4
-Annuler : STOP
+1 : Appeler
+2 : Envoyer un message
+3 : Modifier
+4 : Supprimer
+STOP : Annuler
 """)   
                     if choix2 == '1':
                         for sonnerie in range(3):
@@ -168,11 +168,11 @@ Annuler : STOP
                         autreModif = 'O'
                         while autreModif == 'O':
                             choix3 = input("""Que souhaitez-vous modifier ?
-Nom : 1
-Numero : 2
-Adresse email : 3
-Groupe(s) : 4
-Annuler : STOP
+1 : Nom
+2 : Numero
+3 : Adresse email
+4 : Groupe(s)
+STOP : Annuler
 """)
                             if choix3 == '1':
                                 resultats[choix1-1].nom = input("Nouveau nom : ")
@@ -181,9 +181,9 @@ Annuler : STOP
                             elif choix3 == '3':
                                 if resultats[choix1-1].email:
                                     choix4 = input("""Souhaitez-vous modifier l'adresse mail ou la supprimer ?
-Modifier : 1
-Supprimer : 2
-Annuler : STOP
+1 : Modifier
+2 : Supprimer
+STOP : Annuler
 """)
                                     if choix4 == '1':
                                         resultats[choix1-1].email = input("Adresse mail : ")
@@ -206,9 +206,10 @@ Annuler : STOP
                                 if dicoGroupes:
                                     if resultats[choix1-1].groupe:
                                         choix4 = input("""Voulez-vous ajouter le contact dans un groupe ou le supprimer d'un groupe ?
-Ajouter : 1
-Supprimer : 2
-Annuler : STOP""")
+1 : Ajouter
+2 : Supprimer
+STOP : Annuler
+""")
                                         if choix4 == '1':
                                             groupesSansContact = []
                                             for groupe in dicoGroupes.keys():
@@ -216,12 +217,12 @@ Annuler : STOP""")
                                                     groupesSansContact.append(dicoGroupes[groupe])
                                             print("""   Choisir un groupe (écrire "STOP" pour annuler) :""")
                                             for i in range(len(groupesSansContact)):
-                                                print(f"{groupesSansContact[i]} : {i+1}")
-                                            print(f"AJOUTER UN NOUVEAU GROUPE : {len(groupesSansContact)+1}")
+                                                print(f"{i+1} : {groupesSansContact[i]}")
+                                            print(f"{len(groupesSansContact)+1} : AJOUTER UN NOUVEAU GROUPE")
                                             choix5 = input()
                                             if choix5.isnumeric():
                                                 if 1 <= int(choix5) <= len(groupesSansContact):
-                                                    resultats[choix1-1].groupe.append(groupesSansContact[choix5-1])
+                                                    resultats[choix1-1].groupe.append(listeNomsGroupes[choix5-1])
                                                     print(f'"Le contact a bien été ajouté dans le groupe "{groupesSansContact[choix5-1]}"')
                                                 elif int(choix5) == len(groupesSansContact)+1:
                                                     nom = input("Nom du groupe :")
@@ -235,7 +236,7 @@ Annuler : STOP""")
                                         elif choix4 == '2':
                                             print("""   Choisir un groupe (écrire "STOP" pour annuler) :""")
                                             for i in range(len(resultats[choix1-1].groupe)):
-                                                print(f"{resultats[choix1-1].groupe[i]} : {i+1}")
+                                                print(f"{i+1} : {resultats[choix1-1].groupe[i]}")
                                             choix5 = input()
                                             if choix5.isnumeric():
                                                 if 1 <= int(choix5) <= len(resultats[choix1-1].groupe):
