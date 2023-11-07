@@ -10,11 +10,11 @@ stop = False
 while not stop:
     choix1 = input("""
 ==========REPERTOIRE DE CONTACTS==========
-Consulter la liste des contacts : 1
-Consulter la liste des contacts d'un groupe : 2
-Rechercher un contact (puis choisir une action à réaliser sur le contact) : 3
-Créer un contact : 4
-Quitter : STOP
+1 : Consulter la liste des contacts
+2 : Consulter la liste des contacts d'un groupe
+3 : Rechercher un contact (puis choisir une action à réaliser sur le contact)
+4 : Créer un contact
+STOP : Quitter
 """)
 
 
