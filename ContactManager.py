@@ -10,7 +10,7 @@ class ContactManager:
 - rechercher_contact() -> Rechercher un contact, pour ensuite l'appeler, lui envoyer un message, le modifier ou le supprimer.
 - ajouter_contact() -> Ajouter un contact.'''
 
-    FILE_NAME = 'contacts.csv' 
+    FILE_NAME = 'contacts.csv'
     def __init__(self):
         self.fieldnames = ['nom', 'numero', 'email', 'groupe']
 
@@ -27,40 +27,26 @@ class ContactManager:
         
     
     def __importer_contacts(self):
-        '''Importe les contacts du fichier contacts.csv dans une liste et retourne cette liste.'''
         contacts = []
         file = self.__getFile()
         reader = csv.DictReader(file)
         for row in reader:
-            if row['groupe'] == '[]':
-                contacts.append(Contact(
-                    nom=row['nom'],
-                    numero=row['numero'],
-                    email=row['email']
-                ))
+            if row['groupe']:
+                groupe_str = row['groupe'][1:-1]
+                groupes = groupe_str.split(',')
             else:
-                listeGroupes = []
-                groupeEnCours = ""
-                for lettre in row['groupe']:
-                    if lettre not in ['[',']']:
-                        if lettre != ',':
-                            groupeEnCours += lettre
-                        else:
-                            listeGroupes.append(groupeEnCours)
-                            groupeEnCours = ""
-                contacts.append(Contact(
-                    nom=row['nom'],
-                    numero=row['numero'],
-                    email=row['email'],
-                    groupe=listeGroupes
-                ))
-                        
-                        
-        return(contacts)
+                groupes = []
+            contacts.append(Contact(
+                nom=row['nom'],
+                numero=row['numero'],
+                email=row['email'],
+                groupe=groupes
+            ))
+        return contacts
     
-    def __sauvegarder_contacts(self):
+    def __sauvegarder_contacts(self, contacts):
         '''Si un contact est modifié, le fichier contacts.csv est mis à jour en étant réécrit en entier.'''
-        contacts = self.__importer_contacts()
+        
         for contact in contacts:
             contact.groupe = '[' + ','.join(contact.groupe) + ']'
         data = [self.fieldnames]
@@ -102,7 +88,7 @@ class ContactManager:
                 print("""
 =====CHOISIR UN GROUPE=====
 """)
-                listeNomsGroupes = []
+                listeNomsGroupes = list(dicoGroupes.keys())
                 i = 1
                 for groupe in dicoGroupes.keys():
                     print(f"{i} : {groupe}")
@@ -111,9 +97,10 @@ class ContactManager:
                 choix1 = input("""ECRIRE "STOP" POUR ANNULER.
 """)
                 if choix1.isnumeric():
-                    if 1 <= int(choix1) <= len(dicoGroupes):
-                        print(f"==={listeNomsGroupes[i-1]}===")
-                        for contact in dicoGroupes[listeNomsGroupes[i-1]]:
+                    if 1 <= int(choix1) <= len(listeNomsGroupes):
+                        print(f"""
+==={listeNomsGroupes[int(choix1)-1]}===""")
+                        for contact in dicoGroupes[listeNomsGroupes[int(choix1)-1]]:
                             print(contact)
                     else:
                         print("Merci d'écrire un chiffre valide.")
@@ -138,12 +125,11 @@ class ContactManager:
             else:
                 print(f"{len(resultats)} RESULTATS :")
             for i in range(len(resultats)):
-                print(f"{i + 1} : {resultats[i].nom} ({resultats[i].numero})")
+                print(f'{i + 1} : {resultats[i].nom} ({int(resultats[i].numero)})')
             choix1 = input("""
 Pour choisir une action à réaliser sur un contact, écrire le chiffre correspondant au contact. Pour annuler, écrire STOP.
 """)
             if choix1.isnumeric():
-                choix1 = int(choix1)
                 if 1 <= int(choix1) <= len(resultats):
                     choix2 = input(f"""{resultats[choix1-1]}
 
@@ -166,7 +152,7 @@ STOP : Annuler
                         print("Votre message a bien été envoyé.")
                     elif choix2 == '3':
                         autreModif = 'O'
-                        while autreModif == 'O':
+                        while autreModif.upper() == 'O':
                             choix3 = input("""Que souhaitez-vous modifier ?
 1 : Nom
 2 : Numero
@@ -199,73 +185,96 @@ STOP : Annuler
                                 dicoGroupes = {}
                                 for contact in contacts:
                                     for groupe in contact.groupe:
-                                        if contact.groupe in dicoGroupes.keys():
-                                            dicoGroupes[contact.groupe].append(contact.nom)
+                                        if groupe in dicoGroupes.keys():
+                                            dicoGroupes[groupe].append(contact.nom)
                                         else:
-                                            dicoGroupes[contact.groupe] = [contact.nom]
+                                            dicoGroupes[groupe] = [contact.nom]
                                 if dicoGroupes:
-                                    if resultats[choix1-1].groupe:
+                                    if not resultats[choix1-1].groupe:
+                                        nom = input("Aucun groupe. Créez votre premier groupe : ")
+                                        if nom:
+                                            resultats[choix1-1].groupe.append(nom)
+                                        else:
+                                            print("Nom de groupe non valide.")
+                                        while not nom:
+                                            nom = input("Merci d'écrire un nom : ")
+                                        self.__sauvegarder_contacts(contacts)  # Mise à jour du fichier
+                                    else:
                                         choix4 = input("""Voulez-vous ajouter le contact dans un groupe ou le supprimer d'un groupe ?
 1 : Ajouter
 2 : Supprimer
 STOP : Annuler
 """)
-                                        if choix4 == '1':
-                                            groupesSansContact = []
-                                            for groupe in dicoGroupes.keys():
-                                                if contact.nom not in dicoGroupes[groupe]:
-                                                    groupesSansContact.append(dicoGroupes[groupe])
-                                            print("""   Choisir un groupe (écrire "STOP" pour annuler) :""")
-                                            for i in range(len(groupesSansContact)):
-                                                print(f"{i+1} : {groupesSansContact[i]}")
-                                            print(f"{len(groupesSansContact)+1} : AJOUTER UN NOUVEAU GROUPE")
-                                            choix5 = input()
-                                            if choix5.isnumeric():
-                                                if 1 <= int(choix5) <= len(groupesSansContact):
-                                                    resultats[choix1-1].groupe.append(listeNomsGroupes[choix5-1])
-                                                    print(f'"Le contact a bien été ajouté dans le groupe "{groupesSansContact[choix5-1]}"')
-                                                elif int(choix5) == len(groupesSansContact)+1:
-                                                    nom = input("Nom du groupe :")
+                                    if choix4 == '1':
+                                        groupesSansContact = []
+                                        for groupe in dicoGroupes.keys():
+                                            if contact.nom not in dicoGroupes[groupe]:
+                                                groupesSansContact.append(dicoGroupes[groupe])
+                                        print("Choisir un groupe (écrire 'STOP' pour annuler) :")
+                                        for i in range(len(groupesSansContact)):
+                                            print(f"{i + 1} : {groupesSansContact[i]}")
+                                        print(f"{len(groupesSansContact) + 1} : AJOUTER UN NOUVEAU GROUPE")
+                                        choix5 = input()
+                                        if choix5.isnumeric():
+                                            if 1 <= int(choix5) <= len(groupesSansContact):
+                                                resultats[choix1-1].groupe.append(groupesSansContact[int(choix5)-1])
+                                                print(f'Le contact a bien été ajouté dans le groupe "{groupesSansContact[int(choix5)-1]}"')
+                                            elif int(choix5) == len(groupesSansContact) + 1:
+                                                nom = input("Nom du groupe :")
+                                                if nom:
                                                     resultats[choix1-1].groupe.append(nom)
                                                 else:
-                                                    print("Merci d'écrire un chiffre valide")
-                                            elif choix5.upper() == 'STOP':
-                                                pass
+                                                    print("Nom de groupe non valide.")
                                             else:
                                                 print("Merci d'écrire un chiffre valide")
-                                        elif choix4 == '2':
-                                            print("""   Choisir un groupe (écrire "STOP" pour annuler) :""")
-                                            for i in range(len(resultats[choix1-1].groupe)):
-                                                print(f"{i+1} : {resultats[choix1-1].groupe[i]}")
-                                            choix5 = input()
-                                            if choix5.isnumeric():
-                                                if 1 <= int(choix5) <= len(resultats[choix1-1].groupe):
-                                                    groupeAEnlever = resultats[choix1-1].groupe[i-1]
-                                                    resultats[choix1-1].groupe.remove(groupeAEnlever)
-                                                    print(f'"Le contact a bien été retiré du groupe "{groupeAEnlever}"')
-                                                else:
-                                                    print("Merci d'écrire un chiffre valide")
-                                            elif choix5.upper() == 'STOP':
-                                                pass
+                                        elif choix5.upper() == 'STOP':
+                                            pass
+                                        else:
+                                            print("Merci d'écrire un chiffre valide")
+                                    elif choix4 == '2':
+                                        print("""   Choisir un groupe (écrire "STOP" pour annuler) :""")
+                                        for i in range(len(resultats[choix1-1].groupe)):
+                                            print(f"{i+1} : {resultats[choix1-1].groupe[i]}")
+                                        choix5 = input()
+                                        if choix5.isnumeric():
+                                            if 1 <= int(choix5) <= len(resultats[choix1-1].groupe):
+                                                groupeAEnlever = resultats[choix1-1].groupe[i-1]
+                                                resultats[choix1-1].groupe.remove(groupeAEnlever)
+                                                print(f'"Le contact a bien été retiré du groupe "{groupeAEnlever}"')
                                             else:
-                                                print("Merci d'écrire un chiffre valide.")
-                                        elif choix4.upper() == 'STOP':
+                                                print("Merci d'écrire un chiffre valide")
+                                        elif choix5.upper() == 'STOP':
                                             pass
                                         else:
                                             print("Merci d'écrire un chiffre valide.")
+                                    elif choix4.upper() == 'STOP':
+                                        pass
+                                    else:
+                                        print("Merci d'écrire un chiffre valide.")
                                 else:
                                     nom = input("Aucun groupe. Créez votre premier groupe : ")
+                                    if nom:
+                                        resultats[choix1-1].groupe.append(nom)
+                                    else:
+                                        print("Nom de groupe non valide.")
+                                    while not nom:
+                                        nom = input("Merci d'écrire un nom : ")
                                     while not nom:
                                         nom = input("Merci d'écrire un nom : ")
                                     resultats[choix1-1].groupe.append(nom)
                             elif choix3.upper() == 'STOP':
-                                pass
+                                autreModif = 'N'
                             else:
                                 print("Merci d'écrire un chiffre valide.")
                             autreModif = input("Voulez-vous modifier autre chose ? (O / N)")
                             while autreModif.upper() not in ['O','N']:
                                 autreModif = input("Merci d'écrire une lettre valide. (O / N)")
-                        self.__sauvegarder_contacts()
+                        self.__sauvegarder_contacts(contacts)
+                    elif choix2 == '4':
+                        resultats.pop(choix1-1)
+                        self.__sauvegarder_contacts(contacts)  # Mise à jour du fichier
+                        print("Le contact a bien été supprimé.")
+                        time.sleep(0.5)
                     elif choix2.upper() == 'STOP':
                         pass
                     else:
